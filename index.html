@@ -33,13 +33,17 @@
 
   // Загрузка данных при запуске
   window.onload = function() {
-    loadData();
-    renderTables();
+    loadTables();
   };
 
-  function addTable() {
+  async function loadTables() {
+    const response = await fetch('/api/tables');
+    tables = await response.json();
+    renderTables();
+  }
+
+  async function addTable() {
     const newTable = {
-      id: Date.now(),
       name: "Новая таблица",
       comment: "",
       data: [
@@ -47,8 +51,15 @@
         Array(12).fill("")
       ]
     };
-    tables.push(newTable);
-    saveData();
+    const response = await fetch('/api/tables', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newTable),
+    });
+    const savedTable = await response.json();
+    tables.push(savedTable);
     renderTables();
   }
 
@@ -60,18 +71,18 @@
       tableElement.innerHTML = `
                     <tr>
                         <th colspan="12">
-                            <input type="text" value="${table.name}" onchange="updateTableName(${table.id}, this.value)">
+                            <input type="text" value="${table.name}" onchange="updateTableName('${table._id}', this.value)">
                         </th>
                     </tr>
                     <tr>
                         <th colspan="12">
-                            <input type="text" value="${table.comment}" onchange="updateTableComment(${table.id}, this.value)">
+                            <input type="text" value="${table.comment}" onchange="updateTableComment('${table._id}', this.value)">
                         </th>
                     </tr>
                     ${table.data.map(row => `
                         <tr>
                             ${row.map((cell, index) => `
-                                <td contenteditable="true" oninput="updateTableCell(${table.id}, ${table.data.indexOf(row)}, ${index}, this.textContent)">${cell}</td>
+                                <td contenteditable="true" oninput="updateTableCell('${table._id}', ${table.data.indexOf(row)}, ${index}, this.textContent)">${cell}</td>
                             `).join("")}
                         </tr>
                     `).join("")}
@@ -79,35 +90,44 @@
       tablesContainer.appendChild(tableElement);
     });
   }
-
-  function updateTableName(id, newName) {
-    const table = tables.find(t => t.id === id);
+  async function updateTableName(id, newName) {
+    const table = tables.find(t => t._id === id);
     if (table) {
       table.name = newName;
-      saveData();
+      await updateTable(table);
     }
   }
-
-  function updateTableComment(id, newComment) {
-    const table = tables.find(t => t.id === id);
+  async function updateTableComment(id, newComment) {
+    const table = tables.find(t => t._id === id);
     if (table) {
       table.comment = newComment;
-      saveData();
+      await updateTable(table);
     }
   }
 
-  function updateTableCell(id, rowIndex, cellIndex, newValue) {
-    const table = tables.find(t => t.id === id);
+  async function updateTableCell(id, rowIndex, cellIndex, newValue) {
+    const table = tables.find(t => t._id === id);
     if (table) {
       table.data[rowIndex][cellIndex] = newValue;
-      saveData();
+      await updateTable(table);
     }
+  }
+
+  async function updateTable(table) {
+    const response = await fetch(`/api/tables/${table._id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(table),
+    });
+    const updatedTable = await response.json();
+    const index = tables.findIndex(t => t._id === updatedTable._id);
+    tables[index] = updatedTable;
   }
 
   function applyFilters() {
-    const nameFilter = document.g
-
-    etElementById("nameFilter").value.toLowerCase();
+    const nameFilter = document.getElementById("nameFilter").value.toLowerCase();
     const commentFilter = document.getElementById("commentFilter").value.toLowerCase();
 
     const filteredTables = tables.filter(table =>
@@ -125,17 +145,6 @@
       // Здесь тот же код для рендеринга таблицы, что и в функции renderTables
       // ...
     });
-  }
-
-  function saveData() {
-    localStorage.setItem('tablesData', JSON.stringify(tables));
-  }
-
-  function loadData() {
-    const savedData = localStorage.getItem('tablesData');
-    if (savedData) {
-      tables = JSON.parse(savedData);
-    }
   }
 </script>
 </body>
