@@ -3,12 +3,140 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Мобильные таблицы</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <title>Управление таблицами</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
 </head>
 <body>
-<div id="app"></div>
-<script type="module" src="js/main.js"></script>
+<div id="filters">
+  <input type="text" id="nameFilter" placeholder="Фильтр по названию">
+  <input type="text" id="commentFilter" placeholder="Фильтр по комментарию">
+  <button onclick="applyFilters()">Применить фильтры</button>
+</div>
+<button onclick="addTable()">Добавить таблицу</button>
+<div id="tables"></div>
+
+<script>
+  let tables = [];
+
+  // Загрузка данных при запуске
+  window.onload = function() {
+    loadData();
+    renderTables();
+  };
+
+  function addTable() {
+    const newTable = {
+      id: Date.now(),
+      name: "Новая таблица",
+      comment: "",
+      data: [
+        ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
+        Array(12).fill("")
+      ]
+    };
+    tables.push(newTable);
+    saveData();
+    renderTables();
+  }
+
+  function renderTables() {
+    const tablesContainer = document.getElementById("tables");
+    tablesContainer.innerHTML = "";
+    tables.forEach(table => {
+      const tableElement = document.createElement("table");
+      tableElement.innerHTML = `
+                    <tr>
+                        <th colspan="12">
+                            <input type="text" value="${table.name}" onchange="updateTableName(${table.id}, this.value)">
+                        </th>
+                    </tr>
+                    <tr>
+                        <th colspan="12">
+                            <input type="text" value="${table.comment}" onchange="updateTableComment(${table.id}, this.value)">
+                        </th>
+                    </tr>
+                    ${table.data.map(row => `
+                        <tr>
+                            ${row.map((cell, index) => `
+                                <td contenteditable="true" oninput="updateTableCell(${table.id}, ${table.data.indexOf(row)}, ${index}, this.textContent)">${cell}</td>
+                            `).join("")}
+                        </tr>
+                    `).join("")}
+                `;
+      tablesContainer.appendChild(tableElement);
+    });
+  }
+
+  function updateTableName(id, newName) {
+    const table = tables.find(t => t.id === id);
+    if (table) {
+      table.name = newName;
+      saveData();
+    }
+  }
+
+  function updateTableComment(id, newComment) {
+    const table = tables.find(t => t.id === id);
+    if (table) {
+      table.comment = newComment;
+      saveData();
+    }
+  }
+
+  function updateTableCell(id, rowIndex, cellIndex, newValue) {
+    const table = tables.find(t => t.id === id);
+    if (table) {
+      table.data[rowIndex][cellIndex] = newValue;
+      saveData();
+    }
+  }
+
+  function applyFilters() {
+    const nameFilter = document.g
+
+    etElementById("nameFilter").value.toLowerCase();
+    const commentFilter = document.getElementById("commentFilter").value.toLowerCase();
+
+    const filteredTables = tables.filter(table =>
+      table.name.toLowerCase().includes(nameFilter) &&
+      table.comment.toLowerCase().includes(commentFilter)
+    );
+
+    renderFilteredTables(filteredTables);
+  }
+
+  function renderFilteredTables(filteredTables) {
+    const tablesContainer = document.getElementById("tables");
+    tablesContainer.innerHTML = "";
+    filteredTables.forEach(table => {
+      // Здесь тот же код для рендеринга таблицы, что и в функции renderTables
+      // ...
+    });
+  }
+
+  function saveData() {
+    localStorage.setItem('tablesData', JSON.stringify(tables));
+  }
+
+  function loadData() {
+    const savedData = localStorage.getItem('tablesData');
+    if (savedData) {
+      tables = JSON.parse(savedData);
+    }
+  }
+</script>
 </body>
 </html>
